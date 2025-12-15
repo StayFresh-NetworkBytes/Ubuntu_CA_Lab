@@ -1,6 +1,8 @@
 # Cisco Modeling Labs - Ubuntu CA Lab
 
-This lab allows you to build your own Ubuntu CA server to run int Cisco Modeling Labs.  As part of the Ubuntu Cloud-Init process, a couple things occur:
+**README: Note this is not intended to be used to setup a production grade CA server.  This is intended to help you understand the ease to setup your own CA server, and provide a basic environment to sign certificates.  For production you may have more specific requirements that you should research before implementing a CA in your environment.**
+
+This lab allows you to build your own Ubuntu CA server to run in Cisco Modeling Labs.  As part of the Ubuntu Cloud-Init process, a couple things occur:
 
 - /etc/hosts is updated to update the hostname and provide a fully qualified domain-name.  You can use this, or update it with the domain suffix you intended to you in your lab.
 ```
