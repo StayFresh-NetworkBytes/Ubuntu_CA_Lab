@@ -1,0 +1,79 @@
+#cloud-config
+hostname: ubuntu-ca
+manage_etc_hosts: False
+system_info:
+  default_user:
+    name: cisco
+password: s3cr3tpw1
+chpasswd: { expire: False }
+ssh_pwauth: True
+ssh_authorized_keys:
+  - your-ssh-pubkey-line-goes-here
+write_files:
+- path: /etc/hosts
+  permissions: '0644'
+  content: |
+    # Enter Content below
+    127.0.0.1 localhost
+    127.0.1.1 ubuntu-ca ubuntu-ca.cml.lab
+- path: /etc/netplan/network.yaml
+  permissions: '0600'
+  content: |
+    network:
+        version: 2
+        ethernets:
+            ens2:
+                dhcp4: false
+                addresses:
+                  - 192.168.1.56/24
+                routes:
+                  - to: default
+                    via: 192.168.1.1
+                nameservers:
+                  addresses:
+                    - 8.8.8.8
+            ens3:
+                dhcp4: false
+                addresses:
+                  - 192.168.10.56/24
+                routes:
+                  - to: 10.0.0.0/8
+                    via: 192.168.10.254
+                  - to: 172.16.0.0/12
+                    via: 192.168.10.254
+- path: /root/create_ca.sh
+  permissions: '0700'
+  content: |
+    #!/bin/bash
+    echo "Create root CA directory"
+    echo ""
+    mkdir -p /root/ca
+    echo ""
+    echo "cd /root/ca and create directories"
+    echo ""
+    cd /root/ca
+    mkdir newcerts certs crl private requests
+    echo ""
+    echo "Create index.txt to track signed certificates"
+    echo ""
+    touch index.txt
+    echo ""
+    echo "Create serial file to applied SN to sign certificates"
+    echo ""
+    echo '5000' > serial
+    echo ""
+    echo "Create CA Private Key w/ Password"
+    openssl genrsa -aes256 -passout pass:s3cr3tpw1 -out /root/ca/private/cakey.pem 4096
+    echo ""
+    echo "Create Root CA Cert"
+    echo ""
+    openssl req -new -x509 -subj "/C=US/ST=MD/L=Baltimore/O=CML/CN=ubuntu-ca.cml.lab" -key /root/ca/private/cakey.pem -passin pass:s3cr3tpw1 -out cacert.pem -days 3650 -set_serial 0
+runcmd:
+- netplan generate
+- netplan apply
+- apt update ; apt full-upgrade -y
+- apt install openssl
+- sed -i 's|./demoCA|/root/ca|' /etc/ssl/openssl.cnf
+- sed -i 's/^stateOrProvinceName.*= match/stateOrProvinceName     = optional/' /etc/ssl/openssl.cnf
+- sed -i 's/^organizationName.*= match/organizationName        = optional/' /etc/ssl/openssl.cnf
+- /root/create_ca.sh
